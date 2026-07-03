@@ -12,17 +12,17 @@ class Plant:
         print(f"{self.name}: {self.height}cm, {self.age} days old")
 
 
-print("=== Plant Factory Output ===")
+if __name__ == "__main__":
+    print("=== Plant Factory Output ===")
 
-plants = [
-    Plant("Rose", 25.0, 30),
-    Plant("Ook", 200.0, 365),
-    Plant("Cactus", 5.0, 90),
-    Plant("Sunflower", 80.0, 45),
-    Plant("Fern", 15.0, 120)
-]
+    plants = [
+        Plant("Rose", 25.0, 30),
+        Plant("Ook", 200.0, 365),
+        Plant("Cactus", 5.0, 90),
+        Plant("Sunflower", 80.0, 45),
+        Plant("Fern", 15.0, 120)
+    ]
 
-
-for each in plants:
-    print("Created:", end=" ")
-    each.show()
+    for each in plants:
+        print("Created:", end=" ")
+        each.show()
