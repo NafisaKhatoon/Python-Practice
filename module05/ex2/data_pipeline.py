@@ -209,7 +209,7 @@ class DataStream:
                 )
 
     def print_processors_stats(self) -> None:
-        print("== DataStream statistics ==")
+        print("\n== DataStream statistics ==")
 
         if not self.processors:
             print("No processor found, no data")
@@ -246,7 +246,7 @@ class DataStream:
 
 
 def main() -> None:
-    print("=== Code Nexus - Data Pipeline ===")
+    print("=== Code Nexus - Data Pipeline ===\n")
 
     print("Initialize Data Stream...")
 
@@ -254,7 +254,7 @@ def main() -> None:
 
     stream.print_processors_stats()
 
-    print("Registering Processors")
+    print("\nRegistering Processors\n")
 
     numeric = NumericProcessor()
     text = TextProcessor()
@@ -287,7 +287,7 @@ def main() -> None:
 
     stream.print_processors_stats()
 
-    print("Send 3 processed data from each processor "
+    print("\nSend 3 processed data from each processor "
           "to a CSV plugin:")
 
     csv_plugin = CSVPlugin()
@@ -296,7 +296,7 @@ def main() -> None:
 
     stream.print_processors_stats()
 
-    print("Send another batch of data:")
+    print("\nSend another batch of data:")
 
     second_data = [
         21,
@@ -319,7 +319,7 @@ def main() -> None:
 
     stream.print_processors_stats()
 
-    print("Send 5 processed data from each processor "
+    print("\nSend 5 processed data from each processor "
           "to a JSON plugin:")
 
     json_plugin = JSONPlugin()

@@ -101,10 +101,7 @@ class LogProcessor(DataProcessor):
 
         return False
 
-    def ingest(
-        self,
-        data: dict[str, str] | list[dict[str, str]]
-    ) -> None:
+    def ingest(self, data: dict[str, str] | list[dict[str, str]]) -> None:
         if not self.validate(data):
             raise ValueError("Improper log data")
 
@@ -127,15 +124,15 @@ def main() -> None:
     log = LogProcessor()
 
     print("Testing Numeric Processor...")
-    print(numeric.validate(42))
-    print(numeric.validate("Hello"))
+    print(f"Trying to validate input '42': {numeric.validate(42)}")
+    print(f"Trying to validate input 'Hello': {numeric.validate("Hello")}")
 
-    print("Testing invalid numeric ingestion...")
-    try:
-        numeric.ingest("foo")  # type: ignore[arg-type]
-    except ValueError as error:
-        print(f"Got exception: {error}")
-
+    # print("Test invalid ingestion of string 'foo' without prior validation:")
+    # try:
+    #     numeric.ingest("foo")
+    # except ValueError as error:
+    #     print(f"Got exception: {error}")
+    print("Processing data: [1, 2, 3, 4, 5]")
     numeric.ingest([1, 2, 3, 4, 5])
 
     print("Extracting 3 values...")
@@ -144,15 +141,16 @@ def main() -> None:
         print(f"Numeric value {rank}: {value}")
 
     print("\nTesting Text Processor...")
-    print(text.validate("Hello"))
-    print(text.validate(42))
-
+    print(f"Trying to validate input '42': {text.validate(42)}")
+    print("Processing data: ['Hello', 'Nexus', 'World']")
     text.ingest(["Hello", "Nexus", "World"])
+    print("Extracting 1 value...")
 
     rank, value = text.output()
     print(f"Text value {rank}: {value}")
 
     print("\nTesting Log Processor...")
+    print(f"Trying to validate input 'Hello': {log.validate("Hello")}")
 
     log_data = [
         {
@@ -164,9 +162,8 @@ def main() -> None:
             "log_message": "Unauthorized access!!"
         }
     ]
-
-    print(log.validate(log_data))
-    print(log.validate("Hello"))
+    log.validate(log_data)
+    print(f"Processing data: {log_data}")
 
     log.ingest(log_data)
 
