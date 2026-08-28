@@ -6,6 +6,7 @@ class DataProcessor(ABC):
 
     def __init__(self) -> None:
         self.data: list[tuple[int, str]] = []
+        self.rank: int = 0
 
     @abstractmethod
     def validate(self, data: Any) -> bool:
@@ -16,7 +17,7 @@ class DataProcessor(ABC):
         pass
 
     def output(self) -> tuple[int, str]:
-        if len(self.data) == 0:
+        if not self.data:
             return (-1, "")
 
         return self.data.pop(0)
@@ -36,15 +37,17 @@ class NumericProcessor(DataProcessor):
 
         return False
 
-    def ingest(self, data: Any) -> None:
+    def ingest(self, data: int | float | list[int | float]) -> None:
         if not self.validate(data):
             raise ValueError("Improper numeric data")
 
         if isinstance(data, list):
             for item in data:
-                self.data.append((len(self.data), str(item)))
+                self.data.append((self.rank, str(item)))
+                self.rank += 1
         else:
-            self.data.append((len(self.data), str(data)))
+            self.data.append((self.rank, str(data)))
+            self.rank += 1
 
 
 class TextProcessor(DataProcessor):
@@ -61,42 +64,59 @@ class TextProcessor(DataProcessor):
 
         return False
 
-    def ingest(self, data: Any) -> None:
+    def ingest(self, data: str | list[str]) -> None:
         if not self.validate(data):
             raise ValueError("Improper text data")
 
         if isinstance(data, list):
             for item in data:
-                self.data.append((len(self.data), item))
+                self.data.append((self.rank, item))
+                self.rank += 1
         else:
-            self.data.append((len(self.data), data))
+            self.data.append((self.rank, data))
+            self.rank += 1
 
 
 class LogProcessor(DataProcessor):
 
     def validate(self, data: Any) -> bool:
         if isinstance(data, dict):
-            return True
+            return (
+                isinstance(data.get("log_level"), str)
+                and isinstance(data.get("log_message"), str)
+            )
 
         if isinstance(data, list):
             for item in data:
                 if not isinstance(item, dict):
                     return False
+
+                if not isinstance(item.get("log_level"), str):
+                    return False
+
+                if not isinstance(item.get("log_message"), str):
+                    return False
+
             return True
 
         return False
 
-    def ingest(self, data: Any) -> None:
+    def ingest(
+        self,
+        data: dict[str, str] | list[dict[str, str]]
+    ) -> None:
         if not self.validate(data):
             raise ValueError("Improper log data")
 
         if isinstance(data, list):
             for item in data:
                 text = item["log_level"] + ": " + item["log_message"]
-                self.data.append((len(self.data), text))
+                self.data.append((self.rank, text))
+                self.rank += 1
         else:
             text = data["log_level"] + ": " + data["log_message"]
-            self.data.append((len(self.data), text))
+            self.data.append((self.rank, text))
+            self.rank += 1
 
 
 def main() -> None:
@@ -107,18 +127,15 @@ def main() -> None:
     log = LogProcessor()
 
     print("Testing Numeric Processor...")
-    print(f"Trying to validate input '42': "
-          f"{numeric.validate(42)}")
-    print(f"Trying to validate input 'Hello': "
-          f"{numeric.validate('Hello')}")
+    print(numeric.validate(42))
+    print(numeric.validate("Hello"))
 
-    print("Test invalid ingestion of string 'foo' without prior validation:")
+    print("Testing invalid numeric ingestion...")
     try:
-        numeric.ingest("foo")
+        numeric.ingest("foo")  # type: ignore[arg-type]
     except ValueError as error:
         print(f"Got exception: {error}")
 
-    print("Processing data: [1, 2, 3, 4, 5]")
     numeric.ingest([1, 2, 3, 4, 5])
 
     print("Extracting 3 values...")
@@ -127,19 +144,15 @@ def main() -> None:
         print(f"Numeric value {rank}: {value}")
 
     print("\nTesting Text Processor...")
-    print(f"Trying to validate input '42': "
-          f"{text.validate(42)}")
+    print(text.validate("Hello"))
+    print(text.validate(42))
 
-    print("Processing data: ['Hello', 'Nexus', 'World']")
     text.ingest(["Hello", "Nexus", "World"])
 
-    print("Extracting 1 value...")
     rank, value = text.output()
     print(f"Text value {rank}: {value}")
 
     print("\nTesting Log Processor...")
-    print(f"Trying to validate input 'Hello': "
-          f"{log.validate('Hello')}")
 
     log_data = [
         {
@@ -152,7 +165,9 @@ def main() -> None:
         }
     ]
 
-    print(f"Processing data: {log_data}")
+    print(log.validate(log_data))
+    print(log.validate("Hello"))
+
     log.ingest(log_data)
 
     print("Extracting 2 values...")
