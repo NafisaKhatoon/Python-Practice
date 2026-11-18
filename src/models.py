@@ -1,11 +1,10 @@
-"""Pydantic models for the input and output files."""
 from typing import Any
 
 from pydantic import BaseModel
 
 
 class ParamDef(BaseModel):
-    type: str
+    type: str  # "number", "integer", "string" or "boolean"
 
 
 class FunctionDef(BaseModel):
