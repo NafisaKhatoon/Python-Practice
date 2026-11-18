@@ -1,4 +1,6 @@
-.venv/,
-__pycache__/,
-.mypy_cache/,
+__pycache__/
+*.py[cod]
+.venv/
+.mypy_cache/
 data/output/
+EOF
