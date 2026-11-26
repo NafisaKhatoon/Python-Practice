@@ -1,44 +1,58 @@
+"""Token id to text mapping built from the vocabulary file."""
 import json
+from pydantic import BaseModel, TypeAdapter
 
 
-def byte_to_char() -> dict[int, str]:
-    """The model stores bytes as printable look-alike characters."""
-    printable = (
-        list(range(33, 127)) + list(range(161, 173)) + list(range(174, 256))
+def _byte_decoder() -> dict[str, int]:
+    """Inverse of the GPT-2 byte-to-unicode table used by Qwen."""
+    keep = (
+        list(range(ord("!"), ord("~") + 1))
+        + list(range(ord("¡"), ord("¬") + 1))
+        + list(range(ord("®"), ord("ÿ") + 1))
     )
-    table = {}
+    chars = keep[:]
     extra = 0
     for byte in range(256):
-        if byte in printable:
-            table[byte] = chr(byte)
-        else:
-            table[byte] = chr(256 + extra)
+        if byte not in keep:
+            keep.append(byte)
+            chars.append(256 + extra)
             extra += 1
-    return table
+    return {chr(c): b for b, c in zip(keep, chars)}
 
 
-def load_token_texts(path: str) -> list[str]:
-    """Return a list where texts[token_id] is the real text of that token."""
-    with open(path, encoding="utf-8") as file:
-        vocab: dict[str, int] = json.load(file)
+class Vocab(BaseModel):
+    """Maps token IDs to the real text they represent."""
 
-    char_to_byte = {char: byte for byte, char in byte_to_char().items()}
-    texts = [""] * (max(vocab.values()) + 1)  # "" means "unusable token"
+    texts: dict[int, str]
+    text_to_id: dict[str, int]
 
-    for token, token_id in vocab.items():
-        try:
-            raw_bytes = bytes(char_to_byte[char] for char in token)
-            texts[token_id] = raw_bytes.decode("utf-8")
-        except (KeyError, UnicodeDecodeError):
-            pass  # token is only half of a character: leave it unusable
-    return texts
+    def __init__(self, path: str) -> None:
+        """Load and validate the vocabulary file."""
 
+        with open(path, encoding="utf-8") as file:
+            raw = TypeAdapter(
+                dict[str, int]
+            ).validate_python(
+                json.load(file), strict=True
+            )
 
-def is_plain(text: str) -> bool:
-    """Safe inside a JSON string: no quote, no backslash, no control char."""
-    return text != "" and all(c not in '"\\' and ord(c) >= 32 for c in text)
+        decoder = _byte_decoder()
 
+        texts: dict[int, str] = {}
 
-def closes_string(text: str) -> bool:
-    """A token that ends with a quote, with only plain text before it."""
-    return text.endswith('"') and (len(text) == 1 or is_plain(text[:-1]))
+        for token, idx in raw.items():
+            try:
+                data = bytes(decoder[c] for c in token)
+                texts[idx] = data.decode("utf-8")
+
+            except (KeyError, UnicodeDecodeError):
+                continue
+
+        text_to_id = {
+            t: i for i, t in texts.items()
+        }
+
+        super().__init__(
+            texts=texts,
+            text_to_id=text_to_id
+        )
